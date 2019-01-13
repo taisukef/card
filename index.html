@@ -1,0 +1,243 @@
+<!DOCTYPE html><html lang="ja">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<title>prof</title>
+
+<script src=https://fukuno.jig.jp/fukuno.js></script>
+<script src="../util/lib/qrcode.js"></script>
+<script>"use strict"
+
+var TEMPLATE = `
+{
+	"@context": "http://schema.org",
+	"@type": "Person",
+	"name": "NAME",
+	"url": "URL",
+	"description": "DESCRIPTION"
+	"image": "IMAGE"
+}`
+
+var STORAGE_ID = "prof"
+
+window.onload = function() {
+
+	var changed = function() {
+		var s = '<script type="application/ld+json">' + TEMPLATE + '\n</' + 'script>'
+		s = s.replace("NAME", tfname.value)
+		s = s.replace("URL", url.value)
+		s = s.replace("DESCRIPTION", description.value)
+		s = s.replace("IMAGE", image.value)
+		ta.value = s
+		
+		var encs = []
+		for (var i = 0; i < list.length; i++) {
+			encs.push(encodeURIComponent(list[i].value))
+		}
+		var enced = encs.join(",")
+		location.hash = enced
+		//const addurl = "https://sabae.cc/card/#" + enced + ",$add"
+		const addurl = "https://fukuno.jig.jp/app/card/#" + enced
+		
+		img.src = makeQRCode(addurl)
+	}
+	var list = [ tfname, url, description, image ]
+	for (var i = 0; i < list.length; i++) {
+		list[i].onchange = changed
+		list[i].onkeyup = changed
+	}
+
+	var hash = location.hash
+	if (hash.length > 0) {
+		if (hash.indexOf("$add") >= 0) {
+			console.log(hash)
+			for (var i = 0;; i++) {
+				var s = localStorage.getItem(STORAGE_ID + i)
+				if (!s) {
+					localStorage.setItem(STORAGE_ID + i, hash.substring(1))
+					break;
+				}
+			}
+			
+			for (var i = 0;; i++) {
+				var s = localStorage.getItem(STORAGE_ID + i)
+				if (!s)
+					break;
+				console.log(s)
+
+				var a = s.split(',')
+				var ll = []
+				for (var i = 0; i < list.length; i++) {
+					ll[i] = decodeURIComponent(a[i])
+				}
+				var d = makeCard(ll)
+				members.appendChild(d)
+			}
+
+		} else {
+			var a = hash.substring(1).split(',')
+			for (var i = 0; i < list.length; i++) {
+				list[i].value = decodeURIComponent(a[i])
+			}
+		}
+	}
+	changed()
+
+	urltap.onclick = function() {
+		const u = url.value
+		if (u.length > 0) {
+			window.open(u, "_blank")
+		}
+	}
+}
+var makeCard = function(list) {
+	var t = create("table")
+	var a = [ "name", "url", "memo", "image" ]
+	for (var i = 0; i < a.length; i++) {
+		var tr = create("tr")
+		var td = create("td")
+		td.textContent = a[i]
+		tr.appendChild(td)
+		td = create("td")
+		td.textContent = list[i]
+		tr.appendChild(td)
+		t.appendChild(tr)
+	}
+	return t
+}
+
+const makeQRCode = function(text, dotsize) {
+	if (!dotsize)
+		dotsize = 4;
+	var padding = dotsize * 3;
+	var black = "rgb(0,0,0)";
+	var white = "rgb(255,255,255)";
+	
+	var qr = null;
+	var qrerr = null;
+	for (var type = 1; type <= 40; type++) { // 1-40 see http://www.denso-wave.com/qrcode/qrgene2-e.html
+		try {
+			qr = qrcode(type, "L"); // L:5%, M:15%, Q:25%, H:30%
+			qr.addData(text);
+			qr.make();
+			break;
+		} catch(e) {
+			qr = null;
+			qrerr = e;
+		}
+	}
+	if (!qr) {
+		var ele = document.createElement("p");
+		var msg = document.createTextNode("QR Code FAIL! " + qrerr);
+		ele.appendChild(msg);
+		return ele;
+	}
+	
+	var canvas = document.createElement('canvas');
+	var g = canvas.getContext('2d');
+	var qrsize = qr.getModuleCount();
+	canvas.setAttribute('width', qrsize * dotsize + padding * 2);
+	canvas.setAttribute('height', qrsize * dotsize + padding * 2);
+	for (var i = 0; i < qrsize; i++) {
+		for (var j = 0; j < qrsize; j++) {
+			if (qr.isDark(i, j)) {
+				g.fillStyle = black;
+			} else {
+				g.fillStyle = white;
+			}
+			g.fillRect(j * dotsize + padding, i * dotsize + padding, dotsize, dotsize);
+		}
+	}
+	
+//	var img = document.createElement("img");
+//	img.src = canvas.toDataURL("image/png");
+//	return img;
+	return canvas.toDataURL("image/png");
+}
+</script>
+<style>
+body {
+	margin: 0;
+	font-family: sans-serif;
+	text-align: center;
+}
+h1 {
+	font-size: 6vw;
+	margin: 3vh;
+}
+#sub {
+	font-size: 4vw;
+}
+textarea {
+	width: 70vw;
+	height: 12em;
+}
+</style>
+</Head>
+<body>
+
+<script src=//fukuno.jig.jp/app/util/maketable2.js></script>
+<style>
+table {
+	border-collapse: collapse;
+	display: inline-block;
+	vertical-align: top;
+	margin-top: 16px;
+}
+th, td {
+	text-align: left;
+	padding: 1px 5px;
+	border-bottom: 1px solid black;
+	font-size: 140%;
+	text-align: left;
+	font-weight: normal;
+}
+#tc {
+	display: inline-block;
+	padding: 2vw 5vw;
+	margin: 2vw;
+	border: 2px solid;
+	box-shadow: 0.2vw 0.2vw 0.2vw;
+	margin-top: 20px;
+}
+input {
+	font-size: 80%;
+}
+.c {
+	padding: 3vh;
+}
+#img {
+	x-margin-top: 20px;
+	x-margin-bottom: 14px;
+	margin: 10px;
+}
+</style>
+<div id=tc>
+<table id=t></table>
+
+<script>makeTable("t", `
+name	<input id=tfname type=text placeholder=おなまえ>
+<span id=urltap>url</span>	<input id=url type=text placeholder=webサイト>
+memo	<input id=description type=text placeholder=ひとこと>
+image	<input id=image type=text placeholder=しゃしんのURL>
+`)</script>
+
+<img id=img>
+</div>
+		
+<div class=c>
+JSON-LD<br>
+<textarea id=ta></textarea><br>
+* <a href=https://fukuno.jig.jp/2344></a>webサイトへの埋め込み用</a>
+</div>
+
+<div class=c id=members>
+</div>
+
+App: <a href=http://fukuno.jig.jp/2365>@taisukef</a><br>
+LIB: <a href="https://kazuhikoarase.github.io/qrcode-generator/js/demo/">QR Code Generator by Kazuhiko Arase</a><br>
+QR Code: <a href=http://www.denso-wave.com/qrcode/faqpatent-e.html>registered trademark of DENSO WAVE INCORPORATED</a><br>
+
+</body>
+</html>
